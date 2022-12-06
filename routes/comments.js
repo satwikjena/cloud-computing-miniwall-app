@@ -30,6 +30,11 @@ router.post('/',verifyToken,async(req,res)=>{
         return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
     }
 
+   const postOwnerEqualsPostOwner = postExists['postOwner'] === req.body.commentOwner
+    if(postOwnerEqualsPostOwner){
+        return res.status(400).send({message:'Post Owner canot comment on his own post'})
+    }
+
     const commentData = new Comment({
         postId:req.body.postId,
         commentOwner:req.body.commentOwner,
@@ -44,9 +49,9 @@ router.post('/',verifyToken,async(req,res)=>{
 })
 
 // Read all
-router.get('/', verifyToken, async(req,res) =>{
+router.get('/:commentOwner', verifyToken, async(req,res) =>{
     try{
-        const comments = await Comment.find()
+        const comments = await Comment.find({commentOwner:req.params.commentOwner})
         res.send(comments)
     }catch(err){
         res.status(400).send({message:err})
