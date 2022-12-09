@@ -18,16 +18,14 @@ router.post('/',verifyToken,async(req,res)=>{
         return res.status(400).send({message:error['details'][0]['message']})
     }
 
-    // Validation to check if owner exists
-    const userExists = await User.findOne({email:req.body.postOwner})
-    if(!userExists){
-        return res.status(400).send({message:'Post owner doesnot exist, provide a valid user'})
-    }
+    const user = await User.findById(req.user._id)
+    
 
     const postData = new Post({
         postTitle:req.body.postTitle,
-        postOwner:req.body.postOwner,
-        postDescription:req.body.postDescription
+        postOwner:user['email'],
+        postDescription:req.body.postDescription,
+        like:0
     })
     try{
         const postToSave = await postData.save()
@@ -40,8 +38,34 @@ router.post('/',verifyToken,async(req,res)=>{
 // Read all
 router.get('/', verifyToken, async(req,res) =>{
     try{
-        const posts = await Post.find()
+        const posts = await Post.find().sort({ like: -1, timeStamp: -1})
         res.send(posts)
+    }catch(err){
+        res.status(400).send({message:err})
+    }
+})
+
+router.get('/like/:postId', verifyToken, async(req,res) =>{
+
+    const postExists = await Post.findById(req.params.postId)
+    if(!postExists){
+        return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
+    }
+
+    const user = await User.findById(req.user._id)
+    const postOwnerEqualsLikeOwner = postExists['postOwner'] === user['email']
+    if(postOwnerEqualsLikeOwner){
+        return res.status(400).send({message:'Post Owner canot like his own post'})
+    }
+
+    try{
+        const updatePostById = await Post.updateOne(
+            {_id:req.params.postId},
+            {$set:{
+                like:postExists['like'] +1
+                }
+            })
+        res.send(updatePostById)
     }catch(err){
         res.status(400).send({message:err})
     }
@@ -60,11 +84,19 @@ router.get('/:postId',verifyToken, async(req,res) =>{
 // Update post
 router.patch('/:postId',verifyToken, async(req,res) =>{
     try{
+    const user = await User.findById(req.user._id)
+    const postExists = await Post.findById(req.params.postId)
+    if(!postExists){
+        return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
+    }
+    const postOwnerNotEqualsUser = postExists['postOwner'] !== user['email']
+    if(postOwnerNotEqualsUser){
+        return res.status(400).send({message:'Post Owner can only update his post'})
+    }
         const updatePostById = await Post.updateOne(
             {_id:req.params.postId},
             {$set:{
                 postTitle:req.body.postTitle,
-                postOwner:req.body.postOwner,
                 postDescription:req.body.postDescription
                 }
             })
@@ -76,6 +108,17 @@ router.patch('/:postId',verifyToken, async(req,res) =>{
 
 // delete post
 router.delete('/:postId',verifyToken,async(req,res)=>{
+
+    const user = await User.findById(req.user._id)
+    const postExists = await Post.findById(req.params.postId)
+    if(!postExists){
+        return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
+    }
+    const postOwnerNotEqualsUser = postExists['postOwner'] !== user['email']
+    if(postOwnerNotEqualsUser){
+        return res.status(400).send({message:'Post Owner can only delete his post'})
+    }
+
     try{
         const deletePostById = await Post.deleteOne({_id:req.params.postId})
         res.send(deletePostById)
