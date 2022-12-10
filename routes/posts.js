@@ -45,6 +45,16 @@ router.get('/', verifyToken, async(req,res) =>{
     }
 })
 
+router.get('/individualPost', verifyToken, async(req,res) =>{
+    const user = await User.findById(req.user._id)
+    try{
+        const posts = await Post.find({postOwner:user['email']})
+        res.send(posts)
+    }catch(err){
+        res.status(400).send({message:err})
+    }
+})
+
 router.get('/like/:postId', verifyToken, async(req,res) =>{
 
     const postExists = await Post.findById(req.params.postId)

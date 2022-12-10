@@ -43,11 +43,16 @@ router.post('/',verifyToken,async(req,res)=>{
     }
 })
 
-// Read all
+// Read all comments for a user posts
 router.get('/', verifyToken, async(req,res) =>{
     const user = await User.findById(req.user._id)
+    const posts = await Post.find({postOwner:user['email']})
     try{
-        const comments = await Comment.find({commentOwner:user['email']})
+        var comments = [];
+        for (const post of posts) {
+            const comment = await Comment.find({postId:post['_id']})
+            comments.push(comment)
+        };
         res.send(comments)
     }catch(err){
         res.status(400).send({message:err})
