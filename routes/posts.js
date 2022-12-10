@@ -55,7 +55,7 @@ router.get('/individualPost', verifyToken, async(req,res) =>{
     }
 })
 
-router.get('/like/:postId', verifyToken, async(req,res) =>{
+router.patch('/like/:postId', verifyToken, async(req,res) =>{
 
     const postExists = await Post.findById(req.params.postId)
     if(!postExists){
