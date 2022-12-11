@@ -35,7 +35,7 @@ router.post('/',verifyToken,async(req,res)=>{
     }
 })
 
-// Read all
+// Read all and sort according to like first then timestamp
 router.get('/', verifyToken, async(req,res) =>{
     try{
         const posts = await Post.find().sort({ like: -1, timeStamp: -1})
@@ -45,6 +45,7 @@ router.get('/', verifyToken, async(req,res) =>{
     }
 })
 
+//Api to get all posts of the user
 router.get('/individualPost', verifyToken, async(req,res) =>{
     const user = await User.findById(req.user._id)
     try{
@@ -55,13 +56,16 @@ router.get('/individualPost', verifyToken, async(req,res) =>{
     }
 })
 
+//Api to like a post
 router.patch('/like/:postId', verifyToken, async(req,res) =>{
 
+    //validation to check if post exists
     const postExists = await Post.findById(req.params.postId)
     if(!postExists){
         return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
     }
 
+    //validation: apart post owner others can like the post
     const user = await User.findById(req.user._id)
     const postOwnerEqualsLikeOwner = postExists['postOwner'] === user['email']
     if(postOwnerEqualsLikeOwner){
@@ -81,7 +85,7 @@ router.patch('/like/:postId', verifyToken, async(req,res) =>{
     }
 })
 
-// Read by id
+//API to Read post by id
 router.get('/:postId',verifyToken, async(req,res) =>{
     try{
         const getPostById = await Post.findById(req.params.postId)
@@ -94,11 +98,15 @@ router.get('/:postId',verifyToken, async(req,res) =>{
 // Update post
 router.patch('/:postId',verifyToken, async(req,res) =>{
     try{
+
+    //validation to check if post exists
     const user = await User.findById(req.user._id)
     const postExists = await Post.findById(req.params.postId)
     if(!postExists){
         return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
     }
+
+    //validation: post owner can only update post
     const postOwnerNotEqualsUser = postExists['postOwner'] !== user['email']
     if(postOwnerNotEqualsUser){
         return res.status(400).send({message:'Post Owner can only update his post'})
@@ -116,14 +124,16 @@ router.patch('/:postId',verifyToken, async(req,res) =>{
     }
 })
 
-// delete post
+// API to delete post
 router.delete('/:postId',verifyToken,async(req,res)=>{
 
+    //validation to check if post exists
     const user = await User.findById(req.user._id)
     const postExists = await Post.findById(req.params.postId)
     if(!postExists){
         return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
     }
+    //validation: post owner can only delete post
     const postOwnerNotEqualsUser = postExists['postOwner'] !== user['email']
     if(postOwnerNotEqualsUser){
         return res.status(400).send({message:'Post Owner can only delete his post'})

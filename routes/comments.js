@@ -19,11 +19,13 @@ router.post('/',verifyToken,async(req,res)=>{
         return res.status(400).send({message:error['details'][0]['message']})
     }
 
+    //Validation to check if post exists
     const postExists = await Post.findById(req.body.postId)
     if(!postExists){
         return res.status(400).send({message:'Post doesnot exist, provide a valid post'})
     }
 
+    //Validation for post owner who can't comment his own post
     const user = await User.findById(req.user._id)
     const postOwnerEqualsUser = postExists['postOwner'] === user['email']
     if(postOwnerEqualsUser){
@@ -64,10 +66,14 @@ router.get('/', verifyToken, async(req,res) =>{
 router.patch('/:commentId',verifyToken, async(req,res) =>{
 
     const user = await User.findById(req.user._id)
+
+    //Validation to check if comment exists
     const comment = await Comment.findById(req.params.commentId)
     if(!comment){
         return res.status(400).send({message:'Comment doesnot exist,please provide a valid Comment'})
     }
+
+    //Validation for comment owner can only update comment
     const postOwnerNotEqualsUser = comment['commentOwner'] !== user['email']
     if(postOwnerNotEqualsUser){
         return res.status(400).send({message:'Comment Owner can only update comment'})
@@ -90,10 +96,14 @@ router.patch('/:commentId',verifyToken, async(req,res) =>{
 // delete Comment
 router.delete('/:commentId',verifyToken,async(req,res)=>{
     const user = await User.findById(req.user._id)
+
+    //Validation to check if comment exists
     const comment = await Comment.findById(req.params.commentId)
     if(!comment){
         return res.status(400).send({message:'Comment doesnot exist,please provide a valid Comment'})
     }
+
+    //Validation for comment owner can only delete comment
     const postOwnerNotEqualsUser = comment['commentOwner'] !== user['email']
     if(postOwnerNotEqualsUser){
         return res.status(400).send({message:'Comment Owner can only delete comment'})
